@@ -1,0 +1,26 @@
+[
+  {
+    "id": 1,
+    "judul": "Konser IndieFest",
+    "lokasi": "Bandung",
+    "tanggal": "2025-05-01"
+  },
+  {
+    "id": 2,
+    "judul": "Workshop AI",
+    "lokasi": "Jakarta",
+    "tanggal": "2025-05-05"
+  },
+  {
+    "id": 3,
+    "judul": "Festival Kuliner",
+    "lokasi": "Surabaya",
+    "tanggal": "2025-05-10"
+  },
+  {
+    "judul": "Festival Jazz",
+    "lokasi": "Yogyakarta",
+    "tanggal": "2025-07-15",
+    "id": 4
+  }
+]
