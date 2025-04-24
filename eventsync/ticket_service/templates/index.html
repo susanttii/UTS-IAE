@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block title %}Ticket List - EventSync{% endblock %}
+
+{% block content %}
+<div class="row mb-4 align-items-center">
+    <div class="col-lg-6">
+        <h1 class="display-5 fw-bold">Ticket Reservations</h1>
+        <p class="lead text-muted">Manage all ticket reservations in one place</p>
+    </div>
+    <div class="col-lg-6 text-lg-end">
+        <a href="http://localhost:5001" class="btn btn-primary">
+            <i class="bi bi-calendar-event me-2"></i> View Available Events
+        </a>
+    </div>
+</div>
+
+{% if error %}
+<div class="alert alert-danger alert-dismissible fade show" role="alert">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i> {{ error }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+{% endif %}
+
+<div class="row mb-4">
+    <div class="col-md-6 col-lg-4">
+        <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-search"></i></span>
+            <input type="text" id="ticketSearch" class="form-control" placeholder="Search tickets...">
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-4">
+        <select class="form-select" id="statusFilter">
+            <option value="all" selected>All Statuses</option>
+            <option value="RESERVED">Reserved</option>
+            <option value="CONFIRMED">Confirmed</option>
+            <option value="CANCELLED">Cancelled</option>
+        </select>
+    </div>
+</div>
+
+{% if tickets %}
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="bi bi-ticket-detailed me-2"></i>All Tickets</h5>
+            <span class="badge bg-primary">{{ tickets|length }} Total</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0" id="ticketsTable">
+                    <thead>
+                        <tr>
+                            <th><i class="bi bi-hash me-1"></i> ID</th>
+                            <th><i class="bi bi-calendar-event me-1"></i> Event</th>
+                            <th><i class="bi bi-person me-1"></i> Customer</th>
+                            <th><i class="bi bi-ticket-fill me-1"></i> Quantity</th>
+                            <th><i class="bi bi-currency-dollar me-1"></i> Total Price</th>
+                            <th><i class="bi bi-tag me-1"></i> Status</th>
+                            <th class="text-center"><i class="bi bi-gear me-1"></i> Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ticket in tickets %}
+                        <tr class="ticket-row" data-status="{{ ticket.status }}">
+                            <td class="fw-bold">#{{ ticket.id }}</td>
+                            <td>{{ ticket.event.name if ticket.event else 'Event #' + ticket.event_id|string }}</td>
+                            <td>{{ ticket.customer_name }}</td>
+                            <td>{{ ticket.quantity }}</td>
+                            <td class="fw-bold">${{ "%.2f"|format(ticket.total_price) }}</td>
+                            <td>
+                                <span class="ticket-status status-{{ ticket.status|lower }}">
+                                    {{ ticket.status }}
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                <a href="{{ url_for('get_ticket_page', ticket_id=ticket.id) }}" class="btn btn-sm btn-primary">
+                                    <i class="bi bi-eye me-1"></i> View Details
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="badge bg-warning me-2">Reserved: {{ tickets|selectattr('status', 'eq', 'RESERVED')|list|length }}</span>
+                    <span class="badge bg-success me-2">Confirmed: {{ tickets|selectattr('status', 'eq', 'CONFIRMED')|list|length }}</span>
+                    <span class="badge bg-danger">Cancelled: {{ tickets|selectattr('status', 'eq', 'CANCELLED')|list|length }}</span>
+                </div>
+
+            </div>
+        </div>
+    </div>
+{% else %}
+    <div class="card text-center p-5 mb-4">
+        <div class="py-5">
+            <i class="bi bi-ticket-perforated-fill text-muted" style="font-size: 4rem;"></i>
+            <h3 class="mt-4 mb-3">No Tickets Available</h3>
+            <p class="text-muted mb-4">There are currently no ticket reservations in the system.</p>
+            <a href="http://localhost:5001" class="btn btn-primary btn-lg">
+                <i class="bi bi-calendar-event me-2"></i> Browse Available Events
+            </a>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('ticketSearch');
+        const statusFilter = document.getElementById('statusFilter');
+        const ticketRows = document.querySelectorAll('.ticket-row');
+
+        
+        // Search functionality
+        if (searchInput) {
+            searchInput.addEventListener('keyup', filterTickets);
+        }
+        
+        // Status filter functionality
+        if (statusFilter) {
+            statusFilter.addEventListener('change', filterTickets);
+        }
+        
+
+        
+        function filterTickets() {
+            const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+            const statusValue = statusFilter ? statusFilter.value : 'all';
+            
+            ticketRows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                const rowStatus = row.getAttribute('data-status');
+                
+                // Check if status matches filter
+                const statusMatch = statusValue === 'all' || statusValue === rowStatus;
+                
+                // Check if any cell contains the search term
+                let textMatch = false;
+                cells.forEach(cell => {
+                    if (cell.textContent.toLowerCase().includes(searchTerm)) {
+                        textMatch = true;
+                    }
+                });
+                
+                // Show or hide row based on filters
+                if (statusMatch && textMatch) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

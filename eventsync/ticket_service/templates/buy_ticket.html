@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block title %}Purchase Tickets - EventSync{% endblock %}
+
+{% block content %}
+<div class="row mb-4 align-items-center">
+    <div class="col">
+        <h1 class="display-5 fw-bold">Purchase Tickets</h1>
+    </div>
+    <div class="col text-end">
+        <a href="{{ url_for('index') }}" class="btn btn-outline-primary">
+            <i class="bi bi-arrow-left"></i> Back to Tickets
+        </a>
+    </div>
+</div>
+
+{% if error %}
+<div class="alert alert-danger alert-dismissible fade show" role="alert">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i> {{ error }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+{% endif %}
+
+{% if event %}
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="bi bi-calendar-event me-2"></i>Event Details</h5>
+            </div>
+            <div class="card-body">
+                <h3 class="mb-3">{{ event.name }}</h3>
+                <div class="event-info mb-4">
+                    <p class="lead">{{ event.description }}</p>
+                </div>
+                
+                <div class="mb-4">
+                    <div class="d-flex align-items-center mb-3">
+                        <i class="bi bi-calendar3 me-2 text-primary fs-4"></i>
+                        <span class="event-date">{{ event.event_date[:10] }} at {{ event.event_date[11:16] }}</span>
+                    </div>
+                    
+                    <div class="d-flex align-items-center mb-3">
+                        <i class="bi bi-geo-alt me-2 text-primary fs-4"></i>
+                        <span>{{ event.venue }}</span>
+                    </div>
+                    
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-ticket-perforated me-2 text-primary fs-4"></i>
+                        <span>
+                            <span class="ticket-status {% if event.available_tickets > event.total_tickets * 0.5 %}status-available{% elif event.available_tickets > 0 %}status-limited{% else %}status-sold-out{% endif %}">
+                                {{ event.available_tickets }} / {{ event.total_tickets }} tickets available
+                            </span>
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="progress mb-3" style="height: 10px;">
+                    <div class="progress-bar bg-primary" role="progressbar" style="width: {{ (1 - event.available_tickets / event.total_tickets) * 100 }}%" 
+                        aria-valuenow="{{ event.available_tickets }}" aria-valuemin="0" aria-valuemax="{{ event.total_tickets }}"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="bi bi-cart-plus me-2"></i>Ticket Reservation</h5>
+            </div>
+            <div class="card-body">
+                {% if event.available_tickets > 0 %}
+                <form method="POST" action="{{ url_for('buy_ticket') }}" id="ticketForm">
+                    <input type="hidden" name="event_id" value="{{ event.id }}">
+                    
+                    <div class="mb-4">
+                        <label for="customer_name" class="form-label">Your Name</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-person"></i></span>
+                            <input type="text" class="form-control" id="customer_name" name="customer_name" placeholder="John Doe" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="customer_email" class="form-label">Email Address</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                            <input type="email" class="form-control" id="customer_email" name="customer_email" placeholder="john@example.com" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="quantity" class="form-label">Number of Tickets</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-ticket-perforated"></i></span>
+                            <input type="number" class="form-control" id="quantity" name="quantity" min="1" max="{{ event.available_tickets }}" value="1" required>
+                        </div>
+                        <div class="d-flex justify-content-between mt-2">
+                            <div class="form-text">Max: {{ event.available_tickets }} tickets</div>
+                            <div class="price-display" id="totalPrice">$100.00</div>
+                        </div>
+                    </div>
+                    
+                    <div class="summary-section mb-4">
+                        <h6 class="mb-3">Order Summary</h6>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Price per ticket:</span>
+                            <span>$100.00</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Quantity:</span>
+                            <span id="summaryQuantity">1</span>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-between fw-bold">
+                            <span>Total:</span>
+                            <span id="summaryTotal">$100.00</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="terms" required>
+                            <label class="form-check-label" for="terms">
+                                I agree to the <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal">terms and conditions</a>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100 py-3">Reserve Tickets Now</button>
+                </form>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="bi bi-ticket-perforated-fill text-danger" style="font-size: 5rem;"></i>
+                    <h4 class="mt-3 mb-3">Sold Out!</h4>
+                    <p class="text-muted mb-4">Sorry, this event is currently sold out. Please check other available events.</p>
+                    <a href="http://localhost:5001" class="btn btn-primary w-100 py-3">
+                        <i class="bi bi-calendar2-event me-2"></i> Browse Other Events
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Terms and Conditions Modal -->
+<div class="modal fade" id="termsModal" tabindex="-1" aria-labelledby="termsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="termsModalLabel">Terms and Conditions</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <h6>Ticket Purchase Agreement</h6>
+                <p>By purchasing tickets through EventSync, you agree to the following terms:</p>
+                <ul>
+                    <li>All sales are final. No refunds or exchanges except as required by law.</li>
+                    <li>Tickets are valid only for the specific event, date, and time indicated.</li>
+                    <li>EventSync reserves the right to refuse entry or remove any person from an event.</li>
+                    <li>Events may be subject to change or cancellation. In case of cancellation, refunds will be processed automatically.</li>
+                    <li>Your personal information will be handled in accordance with our Privacy Policy.</li>
+                </ul>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">I Understand</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="card text-center p-5 mb-4">
+    <div class="py-4">
+        <i class="bi bi-exclamation-triangle text-danger" style="font-size: 4rem;"></i>
+        <h3 class="mt-4 mb-3">Event Not Found</h3>
+        <p class="text-muted mb-4">Event information could not be loaded. Please try again or select a different event.</p>
+        <a href="http://localhost:5001" class="btn btn-primary py-2 px-4">
+            <i class="bi bi-calendar2-event me-2"></i> Browse Events
+        </a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const quantityInput = document.getElementById('quantity');
+        const totalPriceElement = document.getElementById('totalPrice');
+        const summaryQuantityElement = document.getElementById('summaryQuantity');
+        const summaryTotalElement = document.getElementById('summaryTotal');
+        
+        if (quantityInput) {
+            const updatePrice = function() {
+                const quantity = parseInt(quantityInput.value);
+                const pricePerTicket = 100.00;
+                const totalPrice = quantity * pricePerTicket;
+                
+                totalPriceElement.textContent = '$' + totalPrice.toFixed(2);
+                summaryQuantityElement.textContent = quantity;
+                summaryTotalElement.textContent = '$' + totalPrice.toFixed(2);
+            };
+            
+            quantityInput.addEventListener('change', updatePrice);
+            quantityInput.addEventListener('input', updatePrice);
+        }
+    });
+</script>
+{% endblock %}

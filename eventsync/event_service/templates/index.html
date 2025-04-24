@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}Event List - EventSync{% endblock %}
+
+{% block content %}
+<div class="row mb-4 align-items-center">
+    <div class="col-lg-6">
+        <h1 class="display-5 fw-bold">Upcoming Events</h1>
+        <p class="lead text-muted">Browse our collection of exciting events</p>
+    </div>
+    <div class="col-lg-6 text-lg-end">
+        <a href="{{ url_for('create_event_form') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-2"></i> Create New Event
+        </a>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6 col-lg-4">
+        <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-search"></i></span>
+            <input type="text" id="eventSearch" class="form-control" placeholder="Search events...">
+        </div>
+    </div>
+</div>
+
+{% if events %}
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4" id="eventCards">
+        {% for event in events %}
+        <div class="col event-card">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">{{ event.name }}</h5>
+                    <span class="ticket-status {% if event.available_tickets > event.total_tickets * 0.5 %}status-available{% elif event.available_tickets > 0 %}status-limited{% else %}status-sold-out{% endif %}">
+                        {% if event.available_tickets > event.total_tickets * 0.5 %}
+                            Available
+                        {% elif event.available_tickets > 0 %}
+                            Limited
+                        {% else %}
+                            Sold Out
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <p class="card-text">{{ event.description|truncate(100) }}</p>
+                    </div>
+                    
+                    <div class="d-flex align-items-center mb-3">
+                        <i class="bi bi-calendar3 me-2 text-primary"></i>
+                        <span class="event-date">{{ event.event_date[:10] }} at {{ event.event_date[11:16] }}</span>
+                    </div>
+                    
+                    <div class="d-flex align-items-center mb-3">
+                        <i class="bi bi-geo-alt me-2 text-primary"></i>
+                        <span>{{ event.venue }}</span>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span><i class="bi bi-ticket-perforated me-2 text-primary"></i> Tickets:</span>
+                            <span class="fw-bold">{{ event.available_tickets }} / {{ event.total_tickets }}</span>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-primary" role="progressbar" 
+                                style="width: {{ (1 - event.available_tickets / event.total_tickets) * 100 }}%" 
+                                aria-valuenow="{{ event.available_tickets }}" 
+                                aria-valuemin="0" 
+                                aria-valuemax="{{ event.total_tickets }}"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer d-flex justify-content-between">
+                    <a href="{{ url_for('get_event_page', event_id=event.id) }}" class="btn btn-outline-primary">
+                        <i class="bi bi-info-circle me-1"></i> Details
+                    </a>
+                    <a href="http://localhost:5002/buy-ticket?event_id={{ event.id }}" class="btn btn-primary {% if event.available_tickets == 0 %}disabled{% endif %}">
+                        <i class="bi bi-cart me-1"></i> {% if event.available_tickets > 0 %}Buy Tickets{% else %}Sold Out{% endif %}
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="card text-center p-5 mb-4">
+        <div class="py-5">
+            <i class="bi bi-calendar2-x text-muted" style="font-size: 4rem;"></i>
+            <h3 class="mt-4 mb-3">No Events Available</h3>
+            <p class="text-muted mb-4">There are currently no events scheduled. Why not create the first one?</p>
+            <a href="{{ url_for('create_event_page') }}" class="btn btn-primary btn-lg">
+                <i class="bi bi-plus-circle me-2"></i> Create New Event
+            </a>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('eventSearch');
+        const eventCards = document.querySelectorAll('.event-card');
+        
+        if (searchInput) {
+            searchInput.addEventListener('keyup', function() {
+                const searchTerm = this.value.toLowerCase();
+                
+                eventCards.forEach(card => {
+                    const cardTitle = card.querySelector('.card-title').textContent.toLowerCase();
+                    const cardDesc = card.querySelector('.card-text').textContent.toLowerCase();
+                    const cardVenue = card.querySelector('.bi-geo-alt').nextElementSibling.textContent.toLowerCase();
+                    
+                    if (cardTitle.includes(searchTerm) || 
+                        cardDesc.includes(searchTerm) || 
+                        cardVenue.includes(searchTerm)) {
+                        card.style.display = '';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+            });
+        }
+    });
+</script>
+{% endblock %}
